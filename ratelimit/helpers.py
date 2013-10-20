@@ -37,7 +37,7 @@ def _split_rate(rate):
     return count, time
 
 
-def _get_keys(request, ip=True, field=None, keyfuncs=None):
+def _get_keys(request, ip=True, field=None, keyfuncs=None, ratekey=None):
     keys = []
     if ip:
         keys.append('ip:' + request.META['REMOTE_ADDR'])
@@ -53,7 +53,11 @@ def _get_keys(request, ip=True, field=None, keyfuncs=None):
             keyfuncs = [keyfuncs]
         for k in keyfuncs:
             keys.append(k(request))
-    return [CACHE_PREFIX + k for k in keys]
+    if ratekey:
+        cache_prefix = "%s%s:" % (CACHE_PREFIX, ratekey)
+    else:
+        cache_prefix = CACHE_PREFIX
+    return [cache_prefix + k for k in keys]
 
 
 def _incr(cache, keys, timeout=60):
@@ -70,7 +74,7 @@ def _incr(cache, keys, timeout=60):
 
 
 def is_ratelimited(request, increment=False, ip=True, method=['POST'],
-                   field=None, rate='5/m', keys=None):
+                   field=None, rate='5/m', keys=None, ratekey=None):
     count, period = _split_rate(rate)
     cache = getattr(settings, 'RATELIMIT_USE_CACHE', 'default')
     cache = get_cache(cache)
@@ -78,7 +82,7 @@ def is_ratelimited(request, increment=False, ip=True, method=['POST'],
     request.limited = getattr(request, 'limited', False)
     if (not request.limited and increment and RATELIMIT_ENABLE and
             _method_match(request, method)):
-        _keys = _get_keys(request, ip, field, keys)
+        _keys = _get_keys(request, ip, field, keys, ratekey)
         counts = _incr(cache, _keys, period)
         if any([c > count for c in counts.values()]):
             request.limited = True
