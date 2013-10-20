@@ -61,15 +61,12 @@ def _get_keys(request, ip=True, field=None, keyfuncs=None, ratekey=None):
 
 
 def _incr(cache, keys, timeout=60):
-    # Yes, this is a race condition, but memcached.incr doesn't reset the
-    # timeout.
-    counts = cache.get_many(keys)
+    counts = {}
     for key in keys:
-        if key in counts:
-            counts[key] += 1
-        else:
-            counts[key] = 1
-    cache.set_many(counts, timeout=timeout)
+        try:
+            counts[key] = cache.incr(key)
+        except ValueError:
+            counts[key] = cache.set(key, 1)
     return counts
 
 
