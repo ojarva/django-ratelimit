@@ -66,7 +66,7 @@ def _incr(cache, keys, timeout=60):
         try:
             counts[key] = cache.incr(key)
         except ValueError:
-            counts[key] = cache.set(key, 1)
+            counts[key] = cache.set(key, 1, timeout)
     return counts
 
 
