@@ -52,7 +52,11 @@ def _get_keys(request, ip=True, field=None, keyfuncs=None, ratekey=None):
         if not isinstance(keyfuncs, (list, tuple)):
             keyfuncs = [keyfuncs]
         for k in keyfuncs:
-            keys.append(k(request))
+            v = k(request)
+            if not isinstance(v, (list, tuple)):
+                keys.append(v)
+            else:
+                keys += v
     if ratekey:
         cache_prefix = "%s%s:" % (CACHE_PREFIX, ratekey)
     else:
